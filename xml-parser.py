@@ -39,6 +39,7 @@ class XmlParser:
                               "Time_Instr", "Time_NoInstr",
                               "Correct",
                               "VOTATfreq", "HOTATfreq", "NOTATfreq", "CAfreq",
+                              "VOTAT_x_vars", "fullVOTAT",
                               "StratSeq", "ActionSeq"]
 
         self.df_long = pd.DataFrame(columns=self.dfLongColumns)
@@ -226,6 +227,11 @@ class XmlParser:
 
         buttons_to_ignore = ["Start", "End"]
 
+        votat_array = []
+        this_strategy = None
+        time_delta = None
+        max_len = None
+
         # -------------------------------------------------------------------
         # iterate through log entries
         # -------------------------------------------------------------------
@@ -276,14 +282,35 @@ class XmlParser:
                                         if thisPhase == get_phase and get_button == "Execute":
                                             rounds[get_phase] += 1
 
-                                            # store STRATEGIES
+                                            # store values for exo + endo variables
                                             for variable in entry.iter("variable"):
                                                 this_row[variable.attrib["userDefinedId"]] = int(
                                                     variable.attrib["value"])
 
+                                            # code STRATEGIES
+                                            this_exo_values = [this_row[exo] for exo in exo_variables]
+                                            num_zeros = this_exo_values.count(0)
+                                            max_len = len(this_exo_values)
+
+                                            if num_zeros == max_len:
+                                                this_strategy = "NOTAT"
+                                            elif num_zeros == max_len - 1:
+                                                this_strategy = "VOTAT"
+                                                if thisPhase == "exploration": # fullVOTAT is relevant for exploration
+                                                    votat_array.append(this_exo_values)
+                                            elif num_zeros == 0:
+                                                this_strategy = "CA"
+                                            elif max_len > 2 and num_zeros == 1:
+                                                this_strategy = "HOTAT"
+                                            else:
+                                                this_strategy = np.NaN
+
                                 # IF add or remove dependency
                                 if actions[action] == actions["AddDependency"] or actions[action] == actions[
                                     "RemoveDependency"]:
+
+                                    this_strategy = np.NaN
+
                                     if get_phase == "exploration":
                                         source = entry.attrib["sourceId"]
                                         destination = entry.attrib["destinationId"]
@@ -295,35 +322,21 @@ class XmlParser:
                                 this_row["Phase"] = get_phase
                                 this_row["Action"] = action
                                 this_row["Round"] = rounds[get_phase]
+                                this_row["strategy"] = this_strategy
 
                                 self.df_actions = self.df_actions.append(this_row, ignore_index=True)
 
         # -------------------------------------------------------------------
-        # Calcuate strategy scores
+        # check fullVOTAT
         # -------------------------------------------------------------------
-        max_len = len(exo_variables)  # checks how many exo variables (i.e., sliders) do we have
-        sum0 = (self.df_actions[exo_variables] == 0).sum(axis=1)  # check how many slider were not changed in this round
-        sum_na_n = self.df_actions[exo_variables].isna().sum(axis=1)  # ensure that we have valid date for each slider
+        votat_by_vars = np.count_nonzero(np.array(votat_array).sum(axis=0))
 
-        conditions = [
-            (sum0 == max_len) & (sum_na_n == 0),  # NOTAT
-            (sum0 == max_len - 1) & (sum_na_n == 0),  # VOTAT
-            (sum0 == 0) & (sum_na_n == 0),  # CA
-            (sum0 == 1) & (max_len > 2)  # HOTAT
-        ]
+        if votat_by_vars == max_len:
+            full_votat = True
+        else:
+            full_votat = False
 
-        choices = ['NOTAT', 'VOTAT', 'CA', 'HOTAT']
-        self.df_actions['strategy'] = np.select(conditions, choices, default=np.NaN)
-
-        # todo der dataframe muss jedes mal neu geladen werden, ansonsten wird die strategy für jede Zeile bei jedem
-        # neuem item neu berechnet und die alten dann ggf. überschrieben, wenn neue exo variablen dazukommen.
-        # es muss dieses Item und auch diese Versuchsperson ausgewählt werden mit:
-        """
-        self.df_actions[(self.df_actions["Phase"] == phase) &
-                (self.df_actions["ID"] == user) &
-                (self.df_actions["Item"] == task)
-        """
-
+        #print(votat_array, votat_by_vars, full_votat)
         # -------------------------------------------------------------------
         # check if response was correct in EXPLORATION phase + ED + num relations
         # -------------------------------------------------------------------
@@ -456,6 +469,8 @@ class XmlParser:
             agg["HOTATfreq"] = (this_action_df["strategy"] == "HOTAT").sum()
             agg["NOTATfreq"] = (this_action_df["strategy"] == "NOTAT").sum()
             agg["CAfreq"] = (this_action_df["strategy"] == "CA").sum()
+            agg["VOTAT_x_vars"] = votat_by_vars
+            agg["fullVOTAT"] = full_votat
             agg["StratSeq"] = "-".join(list(this_action_df["strategy"].replace("nan", np.NaN).dropna().values))
             agg["ActionSeq"] = "-".join(list(this_action_df["Action"].replace("nan", np.NaN).dropna().values))
 
@@ -471,9 +486,4 @@ if __name__ == '__main__':
 
     print("# finished at", datetime.datetime.now().time())
 
-# todo add fullVOTAT
-# todo startTime neu definieren? (etwas später?)
-# todo generell Zeiten checken
-# todo check whether rounds is calculated correctly
-# todo ignore instruction/instructionED/FinnAngst?
-# todo check whether item with ED (even better: get structure of item)
+# todo startTime correct?
