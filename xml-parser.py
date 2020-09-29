@@ -9,7 +9,7 @@ import sys
 
 class XmlParser:
 
-    def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=False):
+    def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=True):
         """
         @:param inp: specified input path of xml-files
         @:param out: specified out path of data frames
