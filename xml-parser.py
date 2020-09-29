@@ -7,7 +7,7 @@ import os
 import sys
 
 
-class MicroDynParser:
+class XmlParser:
 
     def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=False):
         """
@@ -467,7 +467,7 @@ class MicroDynParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    MicroDynParser(subset_cases=True, subset_tasks=True, verbose=True)
+    XmlParser(subset_cases=True, subset_tasks=True, verbose=True)
 
     print("# finished at", datetime.datetime.now().time())
 
