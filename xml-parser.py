@@ -194,7 +194,7 @@ class XmlParser:
         self.test_description = test
 
         start_time_path = tree.xpath("tracesOverview/logEntry")[0]
-        start_time = convert_time(start_time_path.attrib['timeStamp'])
+        start_time = convert_time(start_time_path.attrib['timeStamp']) # todo <logEntry xsi:type="cbaloggingmodel:ButtonLogEntry" id="$20105534900500"/> start time
 
         # model
         model = tree.xpath("tracesOverview/logEntry/logEntry/designMicrodynModel")[0]
@@ -329,7 +329,7 @@ class XmlParser:
         # -------------------------------------------------------------------
         # check fullVOTAT
         # -------------------------------------------------------------------
-        votat_by_vars = np.count_nonzero(np.array(votat_array).sum(axis=0))
+        votat_by_vars = np.count_nonzero(np.array(votat_array).sum(axis=0)) # todo check if correct calculated
 
         if votat_by_vars == max_len:
             full_votat = True
@@ -349,7 +349,7 @@ class XmlParser:
             this_source = dependency.attrib["sourceId"]
             this_destination = dependency.attrib["targetId"]
 
-            if float(dependency.attrib["factor"]) != 1:  # ensure that only "real" dependencies are considered
+            if float(dependency.attrib["factor"]) != 1:  # ensured that only "real" dependencies are considere
                 given_model_results.append(this_source + "->" + this_destination)
 
         # get also dependencies for eigendynamic
@@ -408,7 +408,7 @@ class XmlParser:
 
         # time incl. instruction
         end_time = this_time
-        exploration_time = (start_time_control - start_time).total_seconds()
+        exploration_time = (start_time_control - start_time).total_seconds() # todo eigentlich ende der explo: <logEntry xsi:type="cbaloggingmodel:MicroDynButtonPressLogEntry" button="Start" phase="control">
         control_time = (end_time - start_time_control).total_seconds()
 
         times = {"exploration": exploration_time,
@@ -487,3 +487,5 @@ if __name__ == '__main__':
     print("# finished at", datetime.datetime.now().time())
 
 # todo startTime correct?
+# todo bei der gesamtzeit nehmen wir die vom IB UND nicht die selbst berechnete. bei den runden nehmen wir die berechneten runden.
+# todo aber start time zum Relativieren ändern bei den runden
