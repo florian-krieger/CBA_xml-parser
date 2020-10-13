@@ -52,6 +52,7 @@ class XmlParser:
         if self.subset_cases or self.subset_tasks:
             self.include_these_files()
 
+        print(self.allFiles)
         # STEP 2 -> parse all files
         self.parse_all_files()
 
@@ -67,11 +68,8 @@ class XmlParser:
         Calls the function self.parse_this_file for each file in the list
         """
 
-        try:
-            for self.thisFile in self.allFiles:
-                self.parse_this_file()
-        except:
 
+        if len(self.allFiles) == 0:
             print("""
             Based on your definitions in both ID.csv and/or tasks.csv no datapoints could be selected.
             Please redefine your specifications in these files or set "subset_clases" and/or "subset_tasks" to "False".
@@ -79,6 +77,12 @@ class XmlParser:
 
             print("# finished at", datetime.datetime.now().time())
             sys.exit(1)
+
+        else:
+            for self.thisFile in self.allFiles:
+                print(self.thisFile)
+                self.parse_this_file()
+
 
     # save data frame
     def save_data_frames(self):
@@ -131,33 +135,35 @@ class XmlParser:
         cases = [str(i) for i in cases]
         tasks = list(self.df_tasks["tasks"].values)
 
-        # convert file names to pandas data frames preparing filter process
-        s = pd.Series(self.allFiles)
-        df_all_files = s.str.split(pat="_", expand=True)
-        df_all_files.replace(r"data\\", "", regex=True, inplace=True)
-        df_all_files_columns = [
-            "ID", "IB_Test", "Test", "Num_Item",
-            "Item_Name_GER", "IB_Version", "Item_Name_EN",
-            "Day", "Month", "Year", "Hour",
-            "Minute", "Second", "dtype"
-        ]
+        # create list in which included files are stored
+        use_these_files = []
 
-        # rename columns
-        df_all_files.columns = df_all_files_columns
+        # loop through all files and filter according to subset specifications
+        for thisFile in self.allFiles:
 
-        # apply filter
-        if self.subset_cases and not self.subset_tasks:
-            df_select_cases = df_all_files[df_all_files["ID"].isin(cases)]
-        elif self.subset_tasks and not self.subset_cases:
-            df_select_cases = df_all_files[df_all_files["Item_Name_EN"].isin(tasks)]
-        elif self.subset_cases and self.subset_tasks:
-            df_select_cases = df_all_files[(df_all_files["ID"].isin(cases)) &
-                                           (df_all_files["Item_Name_EN"].isin(tasks))]
+            # select tasks
+            if self.subset_tasks and not self.subset_cases:
+                for task in tasks:
+                    if task in thisFile:
+                        use_these_files.append(thisFile)
 
-        # convert filtered / selected dataframe to file list
-        x = df_select_cases.to_string(header=False, index=False, index_names=False).split("\n")
-        self.allFiles = ['_'.join(element.split()) for element in x]
-        self.allFiles = [os.path.join(self.input, element) for element in self.allFiles]
+            # select cases
+            elif self.subset_cases and not self.subset_tasks:
+                for case in cases:
+                    if case in thisFile:
+                        use_these_files.append(thisFile)
+
+            # select both tasks and cases
+            elif self.subset_cases and self.subset_tasks:
+                for task in tasks:
+                    for case in cases:
+                        if task in thisFile and case in thisFile:
+                            use_these_files.append(thisFile)
+
+            # over-write "allFiles" with subset of selected files (i.e., "use_these_files")
+            self.allFiles = use_these_files
+
+
 
     # -- MAIN FUNCTION -- #
 
@@ -386,7 +392,12 @@ class XmlParser:
         # get given response
         given_control_response = dict()
         for variable in endo_variables:
-            given_control_response[variable] = self.df_actions[variable].iloc[-1]
+            this_var = self.df_actions.get(variable)
+            print(this_var)
+            if this_var is not None:
+                given_control_response[variable] = this_var.iloc[-1]
+            else:
+                given_control_response[variable] = np.NaN
 
         # compare given answer with pre-defined thresholds
         for given, thres1, thres2 in zip(given_control_response, threshold1, threshold2):
@@ -461,18 +472,20 @@ class XmlParser:
             agg["NumDependencies"] = num_dependencies
             agg["NumInput"] = len(exo_variables)
             agg["NumOutput"] = len(endo_variables)
-            agg["Rounds"] = this_action_df["Round"].max()
-            agg["Time_Instr"] = times[phase]
-            agg["Time_NoInstr"] = times_noInstr[phase]
-            agg["Correct"] = correct[phase]
-            agg["VOTATfreq"] = (this_action_df["strategy"] == "VOTAT").sum()
-            agg["HOTATfreq"] = (this_action_df["strategy"] == "HOTAT").sum()
-            agg["NOTATfreq"] = (this_action_df["strategy"] == "NOTAT").sum()
-            agg["CAfreq"] = (this_action_df["strategy"] == "CA").sum()
-            agg["VOTAT_x_vars"] = votat_by_vars
-            agg["fullVOTAT"] = full_votat
-            agg["StratSeq"] = "-".join(list(this_action_df["strategy"].replace("nan", np.NaN).dropna().values))
-            agg["ActionSeq"] = "-".join(list(this_action_df["Action"].replace("nan", np.NaN).dropna().values))
+
+            if not this_action_df.empty:
+                agg["Rounds"] = this_action_df["Round"].max()
+                agg["Time_Instr"] = times[phase]
+                agg["Time_NoInstr"] = times_noInstr[phase]
+                agg["Correct"] = correct[phase]
+                agg["VOTATfreq"] = (this_action_df["strategy"] == "VOTAT").sum()
+                agg["HOTATfreq"] = (this_action_df["strategy"] == "HOTAT").sum()
+                agg["NOTATfreq"] = (this_action_df["strategy"] == "NOTAT").sum()
+                agg["CAfreq"] = (this_action_df["strategy"] == "CA").sum()
+                agg["VOTAT_x_vars"] = votat_by_vars
+                agg["fullVOTAT"] = full_votat
+                agg["StratSeq"] = "-".join(list(this_action_df["strategy"].replace("nan", np.NaN).dropna().values))
+                agg["ActionSeq"] = "-".join(list(this_action_df["Action"].replace("nan", np.NaN).dropna().values))
 
             self.df_long = self.df_long.append(agg, ignore_index=True)
 
