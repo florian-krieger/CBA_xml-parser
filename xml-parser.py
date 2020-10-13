@@ -9,7 +9,7 @@ import sys
 
 class XmlParser:
 
-    def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=True):
+    def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=True, wide=False):
         """
         @:param inp: specified input path of xml-files
         @:param out: specified out path of data frames
@@ -19,6 +19,7 @@ class XmlParser:
 
         self.relevant_data_points = []
         self.subset_tasks = subset_tasks
+        self.wide = wide
         self.subset_cases = subset_cases
         self.verbose = verbose
         self.out = out
@@ -36,7 +37,7 @@ class XmlParser:
         self.dfLongColumns = ["ID", "Item", "Date", "Test",
                               "Phase", "Rounds",
                               "ED", "NumDependencies", "NumInput", "NumOutput",
-                              "Time_Instr", "Time_NoInstr",
+                              "Time_NoInstr",
                               "Correct",
                               "VOTATfreq", "HOTATfreq", "NOTATfreq", "CAfreq",
                               "VOTAT_x_vars", "fullVOTAT",
@@ -52,7 +53,7 @@ class XmlParser:
         if self.subset_cases or self.subset_tasks:
             self.include_these_files()
 
-        print(self.allFiles)
+
         # STEP 2 -> parse all files
         self.parse_all_files()
 
@@ -80,7 +81,6 @@ class XmlParser:
 
         else:
             for self.thisFile in self.allFiles:
-                print(self.thisFile)
                 self.parse_this_file()
 
 
@@ -93,12 +93,12 @@ class XmlParser:
         if not os.path.exists(self.out):
             os.makedirs(self.out)
 
-        # convert long to wide
-        self.long_to_wide()
-
         # save all data frames
         self.df_long.to_csv(self.out + os.sep + self.test_description + "_aggregated_long.csv", index=False)
-        self.df_wide.to_csv(self.out + os.sep + self.test_description + "_aggregated_wide.csv", index=False)
+
+        if self.wide:
+            self.long_to_wide()
+            self.df_wide.to_csv(self.out + os.sep + self.test_description + "_aggregated_wide.csv", index=False)
 
         if self.verbose:
             self.df_actions.to_csv(self.out + os.sep + self.test_description + "_actions.csv", index=False)
@@ -261,9 +261,6 @@ class XmlParser:
                     this_time = convert_time(entry.attrib["timeStamp"])
                     time_delta = (this_time - start_time).total_seconds()
 
-                # get start of control phase
-                elif "StartControl" in entry.values():
-                    start_time_control = this_time
 
                 # get performed actions
                 else:
@@ -393,7 +390,7 @@ class XmlParser:
         given_control_response = dict()
         for variable in endo_variables:
             this_var = self.df_actions.get(variable)
-            print(this_var)
+            #print(this_var)
             if this_var is not None:
                 given_control_response[variable] = this_var.iloc[-1]
             else:
@@ -415,18 +412,10 @@ class XmlParser:
         # get time on task
         # -------------------------------------------------------------------
 
-        # We already go "start time" and "start control time". We take last assignment to "this_time" as TimeMax of the task.
-
-        # time incl. instruction
-        end_time = this_time
-        exploration_time = (start_time_control - start_time).total_seconds() # todo eigentlich ende der explo: <logEntry xsi:type="cbaloggingmodel:MicroDynButtonPressLogEntry" button="Start" phase="control">
-        control_time = (end_time - start_time_control).total_seconds()
-
-        times = {"exploration": exploration_time,
-                 "control": control_time}
-
         # time excl. instruction
         time_data = tree.xpath("microdynOverview/executedPhases")
+        exploration_time_no_instr = None
+        control_time_no_instr = None
 
         for td in time_data:
             for entry in td.iter():
@@ -475,7 +464,6 @@ class XmlParser:
 
             if not this_action_df.empty:
                 agg["Rounds"] = this_action_df["Round"].max()
-                agg["Time_Instr"] = times[phase]
                 agg["Time_NoInstr"] = times_noInstr[phase]
                 agg["Correct"] = correct[phase]
                 agg["VOTATfreq"] = (this_action_df["strategy"] == "VOTAT").sum()
@@ -495,10 +483,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(subset_cases=True, subset_tasks=True, verbose=True)
+    XmlParser(subset_cases=True, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
-# todo startTime correct?
-# todo bei der gesamtzeit nehmen wir die vom IB UND nicht die selbst berechnete. bei den runden nehmen wir die berechneten runden.
-# todo aber start time zum Relativieren ändern bei den runden
