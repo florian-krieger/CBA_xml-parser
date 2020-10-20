@@ -1,5 +1,5 @@
 # Purpose
-The CBA xml-parser was developed in order to extract log-files in xml-format from tasks run in CBA Itembuilder. Currently it supports the extraction of log-files from one variant of the **MicroDYN** approach, which runs within the CBA Itembuilder environment. It parses through each xml-file and calculates relevant scores, needed for both summative and formative assessment.
+The CBA xml-parser was developed in order to extract log-files in xml-format from tasks run in CBA Itembuilder. Currently it supports the extraction of log-files from one variant of the **MicroDYN** approach (e.g., Greiff et al., 2015a), which runs within the CBA Itembuilder environment. It parses through each xml-file and calculates relevant scores, needed for both summative and formative assessment.
 
 # Installation
 
@@ -134,3 +134,7 @@ The following variables are stored
 ## General remarks on data files
 
 * **Missing values**: If you encounter missing values (indicated as empty cells), these are the result of no interaction between participant and system at all in this item (or this phase). This is because in some item versions it is possible to skip a phase. Hence, in this case, a missing would be coded.
+
+# References
+
+Greiff, S., Stadler, M., Sonnleitner, P., Wolff, C., & Martin, R. (2015). Sometimes less is more: Comparing the validity of complex problem solving measures. *Intelligence*, *50*, 100–113. https://doi.org/10.1016/j.intell.2015.02.007
