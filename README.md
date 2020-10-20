@@ -1,5 +1,5 @@
 # Purpose
-The CBA xml-parser was developed in order to extract log-files in xml-format from tasks run in CBA Itembuilder. Currently it support the extraction of log-files from one variant of the **MicroDYN** approach, which runs within the CBA Itembuilder environment. It parses through each xml-file and calculates relevant scores, needed for both summative and formative assessment.
+The CBA xml-parser was developed in order to extract log-files in xml-format from tasks run in CBA Itembuilder. Currently it supports the extraction of log-files from one variant of the **MicroDYN** approach, which runs within the CBA Itembuilder environment. It parses through each xml-file and calculates relevant scores, needed for both summative and formative assessment.
 
 # Installation
 
@@ -54,7 +54,86 @@ Please stick to the following guide in order to perform the log-file extraction:
 
 5. Run the script :-). 
 
-# Extracted data
+# Description extracted data
 
-tbd...
+After running the script `xml-parser.py`, you receive three output files, which are stored in `out`, summarizing the extracted information. The files are:
 
+*  Actions data file: `[Studyname]_actions.csv`
+*  Aggregated file in long format: `[Studyname]_aggregated_long.csv`
+* Aggregated file in wide format: `[Studyname]_aggregated_wide.csv` (not implemented yet)
+
+To understand the data a little bit of theoretical background might be useful.
+
+## Background
+
+The CPS process consists of two phases: knowledge acquisition phase and knowledge application phase. In the first phase, participants explore the system and try to infer the relationships between input and output variables, which are presented in the system. For instance, how are variables In1 and In2 related to Out1 and Out2. In the second phase, participants need to use the knowledge from first phase to reach predefined goals in the system. To reach these goals a range is given in the output variables, with an upper and a lower threshold.
+
+In the first phase, there are many ways to manipulate the system. Some are more efficient than others, and these ways can be "translated" to strategies. We code the following strategies:
+
+| Name                          | Abbreviation | Description                                                  |
+| ----------------------------- | ------------ | ------------------------------------------------------------ |
+| Vary one thing at a time      | VOTAT        | All variables were kept constant, except one variable        |
+| Full Vary one thing at a time | Full VOTAT   | I                                                            |
+| Ho-one-thing-at-time          | HOTAT        | Only one variable was kept constant, all other variables were varied |
+| No-thing-at-a-time            | NOTAT        | No variable was varied                                       |
+| Change all                    | CA           | All variables were varied                                    |
+
+## Actions data file
+
+This file contains each **action** (labeled as `Action`) from each **participant** (labeled as `ID`) in each **item** (labeled as `Item`) in your (MicroDYN) test. This means there are
+
+
+$$
+a(actions) \times n(participants) \times i(items)
+$$
+
+rows in this data file.
+
+The following actions will be coded:
+
+
+* `PressApply`: Button was pressed on apply to apply changes from sliders to the system. This is coded for both phases knowledge acquisition (labeled `exploration`) and knowledge application (labeled as `control`).
+
+  * It is also coded, which values output (i.e., `Endo` variables) variables in the system have *after* clicking on apply.
+  * According to the changed made on the input variables (i.e., `Exo` variables), strategies are coded (see table above).
+* `AddDepedency` : Action coded when a dependency in knowledge acquisition phase (exploration) was added. Added dependency is indicated in `DeltaDepdendency`.
+* `RemoveDependency`: Same as `AddDependency` but coded when a dependency was removed.
+
+Additional variables in this data file are:
+
+* `Date` : date when the test was taken (timestamp is start time of each item)
+* `TimerAfterOnset`: Time when each action was performed relative to start time of respective item. 
+
+## Aggregated file in long format
+
+All date are stored in long format with 
+$$
+n(participants) \times i(items) \times p(phases)
+$$
+as rows.
+
+The following variables are stored
+
+| Column name               | Description                                                  |
+| ------------------------- | ------------------------------------------------------------ |
+| `ID`                      | Participants' ID                                             |
+| `Item`                    | Item name in German                                          |
+| `Date`                    | Start date of each item                                      |
+| `Test`                    | Name of test given by researcher                             |
+| `Phase`                   | Phase of CPS process, either `exploration` (knowledge acquisition) or `control` (knowledge application) |
+| `Rounds`                  | Number of rounds in the respective phase. Max for exploration is 180. Max for control is 4. |
+| `ED`                      | Does the system has so-called "eigendynamics"?               |
+| `NumDepdendencies`        | How many dependencies does the system have?                  |
+| `NumInput`                | How many input variables does the system have?               |
+| `NumOutput`               | How many output variables does the system have?              |
+| `Time_noInstr`            | Response time for respective phase without time for reading the instructions |
+| `Correct`                 | Score whether item was solved correctly (for each phase)     |
+| `VOTATfreg` and following | In how many rounds was VOTAT (or another strategy, see following columns) applied? |
+| `VOTAT_x_vars` | On how many (distinct) variables was VOTAT applied? |
+| `fullVOTAT` | Full VOTAT, see table above |
+| `StratSeq` | Strategy sequence in both phases |
+| `ActionSeq` | Action sequence in both phases |
+
+## General remarks on data files
+
+* **Missing values**: if you encounter missing values (indicated as empty cells), these are the result of no interaction between participant and system at all in this item. In some item versions it is possible to skip a phase. In this case, a missing would be coded.
