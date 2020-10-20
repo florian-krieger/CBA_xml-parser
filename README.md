@@ -19,7 +19,7 @@ The easiest way to install both Python 3.x and all dependencies is to use [anaco
 conda install -c anaconda lxml
 ```
 
-If Python was installed successfully, just download the whole repository from github and open the script with an IDE (e.g., `Spyder`)
+If Python was installed successfully, just download the whole repository from GitHub and open the script with an IDE (e.g., `Spyder`, which comes with a full anaconda installation)
 
 # Run
 
@@ -50,44 +50,45 @@ Please stick to the following guide in order to perform the log-file extraction:
      subset_tasks=False
      ```
 
-     when calling the main function at the end of the script. Caution: If you choose this option, please make sure that only "normal" MicroDYN items are included. Thus, delete all items with `instruction`or `eigendynamic`in their name.
+     when calling the main function at the end of the script. **Caution**: If you choose this option, please make sure that only "normal" MicroDYN items are included. Thus, delete all items with `instruction`or `eigendynamic`in their name.
 
 5. Run the script :-). 
 
 # Description extracted data
 
-After running the script `xml-parser.py`, you receive three output files, which are stored in `out`, summarizing the extracted information. The files are:
+After running the script `xml-parser.py`, you receive three output files, which are stored in `.\out`, summarizing the extracted information. The files are:
 
 *  Actions data file: `[Studyname]_actions.csv`
 *  Aggregated file in long format: `[Studyname]_aggregated_long.csv`
-* Aggregated file in wide format: `[Studyname]_aggregated_wide.csv` (not implemented yet)
+* Aggregated file in wide format: `[Studyname]_aggregated_wide.csv` (not fully implemented yet...)
 
 To understand the data a little bit of theoretical background might be useful.
 
 ## Background
 
-The CPS process consists of two phases: knowledge acquisition phase and knowledge application phase. In the first phase, participants explore the system and try to infer the relationships between input and output variables, which are presented in the system. For instance, how are variables In1 and In2 related to Out1 and Out2. In the second phase, participants need to use the knowledge from first phase to reach predefined goals in the system. To reach these goals a range is given in the output variables, with an upper and a lower threshold.
+### CPS process
 
-In the first phase, there are many ways to manipulate the system. Some are more efficient than others, and these ways can be "translated" to strategies. We code the following strategies:
+The CPS process consists of two phases: knowledge acquisition phase and knowledge application phase. In the first phase, participants explore the system and try to infer the relationships between input and output variables, which are presented in the system. For instance, how are variables In1 and In2 related to Out1 and Out2. In the second phase, participants need to use the knowledge from first phase to reach predefined goals in the system. To reach these goals a range is given in the output variables, with both an upper and a lower threshold.
+
+### Rounds
+
+Participants can change values of input variables and can then click on "apply". This process is coded as one round. 
+
+### Strategies
+
+In the both phases, there are many ways to manipulate the system. Some are more efficient than others, and these ways can be "translated" to strategies. We code the following strategies:
 
 | Name                          | Abbreviation | Description                                                  |
 | ----------------------------- | ------------ | ------------------------------------------------------------ |
 | Vary one thing at a time      | VOTAT        | All variables were kept constant, except one variable        |
-| Full Vary one thing at a time | Full VOTAT   | I                                                            |
+| Full Vary one thing at a time | Full VOTAT   | Over all rounds, VOTAT was applied to all input variables separately in the system (considered only in knowledge acquisition phase) |
 | Ho-one-thing-at-time          | HOTAT        | Only one variable was kept constant, all other variables were varied |
 | No-thing-at-a-time            | NOTAT        | No variable was varied                                       |
 | Change all                    | CA           | All variables were varied                                    |
 
 ## Actions data file
 
-This file contains each **action** (labeled as `Action`) from each **participant** (labeled as `ID`) in each **item** (labeled as `Item`) in your (MicroDYN) test. This means there are
-
-
-$$
-a(actions) \times n(participants) \times i(items)
-$$
-
-rows in this data file.
+This file contains each **action** (labeled as `Action`) from each **participant** (labeled as `ID`) in each **item** (labeled as `Item`) in your (MicroDYN) test in separate rows. This means there are *a(actions) x n(participants) x i(items)* rows in this data file.
 
 The following actions will be coded:
 
@@ -95,7 +96,7 @@ The following actions will be coded:
 * `PressApply`: Button was pressed on apply to apply changes from sliders to the system. This is coded for both phases knowledge acquisition (labeled `exploration`) and knowledge application (labeled as `control`).
 
   * It is also coded, which values output (i.e., `Endo` variables) variables in the system have *after* clicking on apply.
-  * According to the changed made on the input variables (i.e., `Exo` variables), strategies are coded (see table above).
+  * According to the changes made on the input variables (i.e., `Exo` variables), strategies are coded (see table above).
 * `AddDepedency` : Action coded when a dependency in knowledge acquisition phase (exploration) was added. Added dependency is indicated in `DeltaDepdendency`.
 * `RemoveDependency`: Same as `AddDependency` but coded when a dependency was removed.
 
@@ -106,11 +107,7 @@ Additional variables in this data file are:
 
 ## Aggregated file in long format
 
-All date are stored in long format with 
-$$
-n(participants) \times i(items) \times p(phases)
-$$
-as rows.
+All date are stored in long format with *n(participants) x i(items) x p(phases)* as rows.
 
 The following variables are stored
 
@@ -136,4 +133,4 @@ The following variables are stored
 
 ## General remarks on data files
 
-* **Missing values**: if you encounter missing values (indicated as empty cells), these are the result of no interaction between participant and system at all in this item. In some item versions it is possible to skip a phase. In this case, a missing would be coded.
+* **Missing values**: If you encounter missing values (indicated as empty cells), these are the result of no interaction between participant and system at all in this item (or this phase). This is because in some item versions it is possible to skip a phase. Hence, in this case, a missing would be coded.
