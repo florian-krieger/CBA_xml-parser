@@ -231,7 +231,7 @@ class XmlParser:
             "RemoveDependency": "cbaloggingmodel:MicroDynRemoveDependencyLogEntry"
         }
 
-        buttons_to_ignore = ["Start", "End"]
+        buttons_to_ignore = ["Start", "End", "Reset"]
 
         votat_array = []
         this_strategy = None
