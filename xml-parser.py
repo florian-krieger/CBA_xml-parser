@@ -439,7 +439,7 @@ class XmlParser:
             ed = False
 
         # check number of dependencies (relations)
-        num_dependencies = len(given_model_results) + len(ed_list)
+        num_dependencies = len(given_model_results)
 
         # -------------------------------------------------------------------
         # build df for aggregated data (long format)
