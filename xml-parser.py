@@ -9,7 +9,7 @@ import sys
 
 class XmlParser:
 
-    def __init__(self, inp="data", out="out", verbose=True, subset_cases=False, subset_tasks=True, wide=False):
+    def __init__(self, inp="", out="out", verbose=True, subset_cases=False, subset_tasks=True, wide=False):
         """
         @:param inp: specified input path of xml-files
         @:param out: specified out path of data frames
@@ -46,7 +46,7 @@ class XmlParser:
         self.df_long = pd.DataFrame(columns=self.dfLongColumns)
 
         # STEP 1a -> get all files in path
-        this_path = os.path.join(self.input, "*_scoring.xml")
+        this_path = os.path.join("data", self.input, "*_scoring.xml")
         self.allFiles = glob.glob(this_path)
 
         # STEP 1b -> if subset of cases/tasks for analyses is desired, only include them
@@ -485,7 +485,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(subset_cases=True, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="VAN_2016_9LK", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
