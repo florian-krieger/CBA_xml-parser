@@ -441,9 +441,9 @@ class XmlParser:
         # check number of dependencies (relations)
         num_dependencies = len(given_model_results)
 
-        # -------------------------------------------------------------------
+        # ------------------------------------------------------------------
         # build df for aggregated data (long format)
-        # -------------------------------------------------------------------
+        # ------------------------------------------------------------------
 
         # get Data
         for phase in phases:
