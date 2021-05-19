@@ -332,7 +332,9 @@ class XmlParser:
         # -------------------------------------------------------------------
         # check fullVOTAT
         # -------------------------------------------------------------------
-        votat_by_vars = np.count_nonzero(np.array(votat_array).sum(axis=0)) # todo check if correct calculated
+        votat_array = np.array(votat_array)
+        votat_array = np.absolute(votat_array)
+        votat_by_vars = np.count_nonzero(votat_array.sum(axis=0))
 
         if votat_by_vars == max_len:
             full_votat = True
