@@ -4,3 +4,9 @@
 *.csv
 
 *.iml
+
+*.json
+
+*.R
+
+number of participants.py
