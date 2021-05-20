@@ -149,7 +149,7 @@ class XmlParser:
 
             # select cases
             elif self.subset_cases and not self.subset_tasks:
-                for case in cases:
+                for case in cases: #todo problem when codes are similar!
                     if case in thisFile:
                         use_these_files.append(thisFile)
 
@@ -485,7 +485,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="VAN_2016_9LK", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="COSIMA", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
