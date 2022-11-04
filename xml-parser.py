@@ -69,7 +69,6 @@ class XmlParser:
         Calls the function self.parse_this_file for each file in the list
         """
 
-
         if len(self.allFiles) == 0:
             print("""
             Based on your definitions in both ID.csv and/or tasks.csv no datapoints could be selected.
@@ -134,6 +133,7 @@ class XmlParser:
         cases = list(self.df_cases["ID"].values)
         cases = [str(i) for i in cases]
         tasks = list(self.df_tasks["tasks"].values)
+
 
         # create list in which included files are stored
         use_these_files = []
@@ -201,6 +201,22 @@ class XmlParser:
 
         start_time_path = tree.xpath("tracesOverview/logEntry")[0]
         start_time = convert_time(start_time_path.attrib['timeStamp']) # todo <logEntry xsi:type="cbaloggingmodel:ButtonLogEntry" id="$20105534900500"/> start time
+
+
+        # add start time to actions
+        start_row = dict()
+        start_row["ID"] = user
+        start_row["Item"] = task
+        start_row["Test"] = test
+        start_row["TimeAfterOnset"] = 0
+        start_row["Date"] = start_time
+        start_row["Phase"] = "Start Test"
+        start_row["Action"] = "Start"
+        start_row["Round"] = 0
+        start_row["strategy"] = np.NaN
+
+        start_row_df = pd.DataFrame.from_dict(start_row, orient="index").T
+        self.df_actions = pd.concat([self.df_actions, start_row_df], ignore_index=True)
 
         # model
         model = tree.xpath("tracesOverview/logEntry/logEntry/designMicrodynModel")[0]
@@ -327,7 +343,9 @@ class XmlParser:
                                 this_row["Round"] = rounds[get_phase]
                                 this_row["strategy"] = this_strategy
 
-                                self.df_actions = self.df_actions.append(this_row, ignore_index=True)
+                                this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
+                                self.df_actions = pd.concat([self.df_actions, this_row_df], ignore_index=True)
+                                a = self.df_actions
 
         # -------------------------------------------------------------------
         # check fullVOTAT
@@ -477,7 +495,8 @@ class XmlParser:
                 agg["StratSeq"] = "-".join(list(this_action_df["strategy"].replace("nan", np.NaN).dropna().values))
                 agg["ActionSeq"] = "-".join(list(this_action_df["Action"].replace("nan", np.NaN).dropna().values))
 
-            self.df_long = self.df_long.append(agg, ignore_index=True)
+            agg_df = pd.DataFrame.from_dict(agg, orient="index").T
+            self.df_long = pd.concat([self.df_long, agg_df], ignore_index=True)
 
         # print task, user
         print("    -> finished -", user, "with", task)
@@ -485,7 +504,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="COSIMA", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
