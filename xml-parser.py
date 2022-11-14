@@ -100,6 +100,8 @@ class XmlParser:
             self.df_wide.to_csv(self.out + os.sep + self.test_description + "_aggregated_wide.csv", index=False)
 
         if self.verbose:
+            self.df_actions["TimeAfterOnset"] = pd.to_numeric(self.df_actions["TimeAfterOnset"])
+            self.df_actions.sort_values(by=["TimeAfterOnset"], inplace=True)
             self.df_actions.to_csv(self.out + os.sep + self.test_description + "_actions.csv", index=False)
 
     # convert dfLong to dfWide
@@ -466,8 +468,8 @@ class XmlParser:
         end_row["Test"] = test
         end_row["TimeAfterOnset"] = exploration_time_no_instr
         end_row["Date"] = start_time
-        end_row["Phase"] = "Exploration"
-        end_row["Action"] = "End Exploration"
+        end_row["Phase"] = "exploration"
+        end_row["Action"] = "EndExploration"
         end_row["Round"] = np.NaN
         end_row["strategy"] = np.NaN
 
