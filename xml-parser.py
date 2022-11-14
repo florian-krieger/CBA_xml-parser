@@ -244,7 +244,8 @@ class XmlParser:
         actions = {
             "PressApply": "cbaloggingmodel:MicroDynButtonPressLogEntry",
             "AddDependency": "cbaloggingmodel:MicroDynAddDependencyLogEntry",
-            "RemoveDependency": "cbaloggingmodel:MicroDynRemoveDependencyLogEntry"
+            "RemoveDependency": "cbaloggingmodel:MicroDynRemoveDependencyLogEntry",
+            "PressButton": "cbaloggingmodel:ButtonLogEntry"
         }
 
         buttons_to_ignore = ["Start", "End", "Reset"]
@@ -294,6 +295,9 @@ class XmlParser:
                             # avoid that 'start' and 'end' buttons are counted as actions
                             if get_button not in buttons_to_ignore:
 
+                                if actions[action] == actions["PressButton"]:
+                                    print(entry.attrib.get("id"))
+
                                 # IF press apply
                                 if actions[action] == actions["PressApply"]:
 
@@ -340,7 +344,7 @@ class XmlParser:
                                 this_row["Date"] = this_time
                                 this_row["Phase"] = get_phase
                                 this_row["Action"] = action
-                                this_row["Round"] = rounds[get_phase]
+                                this_row["Round"] = rounds[get_phase] if get_phase is not None else np.NaN
                                 this_row["strategy"] = this_strategy
 
                                 this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
@@ -518,7 +522,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="test", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
