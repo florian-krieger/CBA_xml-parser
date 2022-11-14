@@ -345,7 +345,6 @@ class XmlParser:
 
                                 this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
                                 self.df_actions = pd.concat([self.df_actions, this_row_df], ignore_index=True)
-                                a = self.df_actions
 
         # -------------------------------------------------------------------
         # check fullVOTAT
@@ -447,6 +446,21 @@ class XmlParser:
 
         times_noInstr = {"exploration": exploration_time_no_instr,
                          "control": control_time_no_instr}
+
+        # add end time to actions
+        end_row = dict() #todo check if end time is correctly calculated by item builder
+        end_row["ID"] = user
+        end_row["Item"] = task
+        end_row["Test"] = test
+        end_row["TimeAfterOnset"] = exploration_time_no_instr
+        end_row["Date"] = start_time
+        end_row["Phase"] = "Exploration"
+        end_row["Action"] = "End Exploration"
+        end_row["Round"] = np.NaN
+        end_row["strategy"] = np.NaN
+
+        end_row_df = pd.DataFrame.from_dict(end_row, orient="index").T
+        self.df_actions = pd.concat([self.df_actions, end_row_df], ignore_index=True)
 
         # -------------------------------------------------------------------
         # task characteristics (relations, ED)
