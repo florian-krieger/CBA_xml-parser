@@ -199,9 +199,10 @@ class XmlParser:
 
         self.test_description = test
 
-        start_time_path = tree.xpath("tracesOverview/logEntry")[0]
-        start_time = convert_time(start_time_path.attrib['timeStamp']) # todo <logEntry xsi:type="cbaloggingmodel:ButtonLogEntry" id="$20105534900500"/> start time
+        start_time_path = tree.xpath("tracesOverview/logEntry")[2]
+        start_time = convert_time(start_time_path.attrib['timeStamp'])
 
+        print(start_time)
 
         # add start time to actions
         start_row = dict()
@@ -248,7 +249,11 @@ class XmlParser:
             "PressButton": "cbaloggingmodel:ButtonLogEntry"
         }
 
-        buttons_to_ignore = ["Start", "End", "Reset"]
+        buttons_to_ignore = ["Start",
+                             "End",
+                             "Reset",
+                             "$284335466347500", # start button
+                             ]
 
         votat_array = []
         this_strategy = None
@@ -290,7 +295,10 @@ class XmlParser:
 
                             # try to get phase and buttons
                             get_phase = entry.attrib.get("phase")
-                            get_button = entry.attrib.get("button")
+
+                            get_button = entry.attrib.get("button") \
+                                if entry.attrib.get("button") is not None \
+                                else entry.attrib.get("id")
 
                             # avoid that 'start' and 'end' buttons are counted as actions
                             if get_button not in buttons_to_ignore:
