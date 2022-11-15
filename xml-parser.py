@@ -102,7 +102,7 @@ class XmlParser:
 
         if self.verbose:
             self.df_actions["TimeAfterOnset"] = pd.to_numeric(self.df_actions["TimeAfterOnset"])
-            self.df_actions.sort_values(by=["TimeAfterOnset"], inplace=True)
+            self.df_actions.sort_values(by=["ID", "TimeAfterOnset"], inplace=True)
             self.df_actions.to_csv(self.out + os.sep + self.test_description + "_actions.csv", index=False)
 
     # convert dfLong to dfWide
@@ -205,12 +205,11 @@ class XmlParser:
         start_time_path = tree.xpath("tracesOverview/logEntry")[2]
         start_time = convert_time(start_time_path.attrib['timeStamp'])
 
-        print(start_time)
-
         # add start time to actions
         start_row = dict()
         start_row["ID"] = user
         start_row["Item"] = task
+        start_row["SpecificAction"] = "START"
         start_row["Test"] = test
         start_row["TimeAfterOnset"] = 0
         start_row["Date"] = start_time
@@ -255,10 +254,9 @@ class XmlParser:
         buttons_to_ignore = ["Start",
                              "End",
                              "Reset",
-                             #"$284335466347500", # start button
+                             "$284335466347500", # start button Handball
+                             "$335515708423800", # start button Gardening
                              ]
-
-        slider_buttons = slider.slider_ids(task)
 
         votat_array = []
         this_strategy = None
@@ -305,23 +303,8 @@ class XmlParser:
                                 if entry.attrib.get("button") is not None \
                                 else entry.attrib.get("id")
 
-                            if get_button in slider_buttons:
-                                #if actions[action] == actions["PressButton"]:
-
-                                # Store actions
-                                this_row["SpecificAction"] = slider_buttons.get(get_button)
-                                this_row["TimeAfterOnset"] = time_delta
-                                this_row["Date"] = this_time
-                                this_row["Phase"] = get_phase
-                                this_row["Action"] = action
-                                this_row["Round"] = rounds[get_phase] if get_phase is not None else np.NaN
-                                this_row["strategy"] = this_strategy
-
-                                this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
-                                self.df_actions = pd.concat([self.df_actions, this_row_df], ignore_index=True)
-
                             # avoid that 'start' and 'end' buttons are counted as actions
-                            elif get_button not in buttons_to_ignore:
+                            if get_button not in buttons_to_ignore:
 
                                 # IF press apply
                                 if actions[action] == actions["PressApply"]:
@@ -366,6 +349,7 @@ class XmlParser:
 
                                 # Store actions
                                 this_row["TimeAfterOnset"] = time_delta
+                                this_row["SpecificAction"] = get_button
                                 this_row["Date"] = this_time
                                 this_row["Phase"] = get_phase
                                 this_row["Action"] = action
@@ -481,6 +465,7 @@ class XmlParser:
         end_row["ID"] = user
         end_row["Item"] = task
         end_row["Test"] = test
+        end_row["SpecificAction"] = "END"
         end_row["TimeAfterOnset"] = exploration_time_no_instr
         end_row["Date"] = start_time
         end_row["Phase"] = "exploration"
@@ -547,7 +532,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="test", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
