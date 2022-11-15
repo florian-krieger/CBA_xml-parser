@@ -5,6 +5,7 @@ import numpy as np
 import glob
 import os
 import sys
+import slider
 
 
 class XmlParser:
@@ -29,7 +30,7 @@ class XmlParser:
         # STEP 0a -> df for action stream
         self.actionDfColumns = ["ID", "Item", "Date", "Test",
                                 "TimeAfterOnset", "Phase", "Round",
-                                "Action", "DeltaDependency"]
+                                "Action", "SpecificAction"]
 
         self.df_actions = pd.DataFrame(columns=self.actionDfColumns)
 
@@ -254,8 +255,10 @@ class XmlParser:
         buttons_to_ignore = ["Start",
                              "End",
                              "Reset",
-                             "$284335466347500", # start button
+                             #"$284335466347500", # start button
                              ]
+
+        slider_buttons = slider.slider_ids(task)
 
         votat_array = []
         this_strategy = None
@@ -302,11 +305,23 @@ class XmlParser:
                                 if entry.attrib.get("button") is not None \
                                 else entry.attrib.get("id")
 
-                            # avoid that 'start' and 'end' buttons are counted as actions
-                            if get_button not in buttons_to_ignore:
+                            if get_button in slider_buttons:
+                                #if actions[action] == actions["PressButton"]:
 
-                                if actions[action] == actions["PressButton"]:
-                                    print(entry.attrib.get("id"))
+                                # Store actions
+                                this_row["SpecificAction"] = slider_buttons.get(get_button)
+                                this_row["TimeAfterOnset"] = time_delta
+                                this_row["Date"] = this_time
+                                this_row["Phase"] = get_phase
+                                this_row["Action"] = action
+                                this_row["Round"] = rounds[get_phase] if get_phase is not None else np.NaN
+                                this_row["strategy"] = this_strategy
+
+                                this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
+                                self.df_actions = pd.concat([self.df_actions, this_row_df], ignore_index=True)
+
+                            # avoid that 'start' and 'end' buttons are counted as actions
+                            elif get_button not in buttons_to_ignore:
 
                                 # IF press apply
                                 if actions[action] == actions["PressApply"]:
@@ -347,7 +362,7 @@ class XmlParser:
                                     if get_phase == "exploration":
                                         source = entry.attrib["sourceId"]
                                         destination = entry.attrib["destinationId"]
-                                        this_row["DeltaDependency"] = source + "->" + destination
+                                        this_row["SpecificAction"] = source + "->" + destination
 
                                 # Store actions
                                 this_row["TimeAfterOnset"] = time_delta
