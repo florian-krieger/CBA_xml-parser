@@ -5,7 +5,6 @@ import numpy as np
 import glob
 import os
 import sys
-import slider
 
 
 class XmlParser:
@@ -102,7 +101,7 @@ class XmlParser:
 
         if self.verbose:
             self.df_actions["TimeAfterOnset"] = pd.to_numeric(self.df_actions["TimeAfterOnset"])
-            self.df_actions.sort_values(by=["ID", "TimeAfterOnset"], inplace=True)
+            self.df_actions.sort_values(by=["ID", "Item", "TimeAfterOnset"], inplace=True)
             self.df_actions.to_csv(self.out + os.sep + self.test_description + "_actions.csv", index=False)
 
     # convert dfLong to dfWide
@@ -461,7 +460,7 @@ class XmlParser:
                          "control": control_time_no_instr}
 
         # add end time to actions
-        end_row = dict() #todo check if end time is correctly calculated by item builder
+        end_row = dict()
         end_row["ID"] = user
         end_row["Item"] = task
         end_row["Test"] = test
@@ -532,7 +531,7 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
 
     print("# finished at", datetime.datetime.now().time())
 
