@@ -255,6 +255,8 @@ class XmlParser:
                              "Reset",
                              "$284335466347500", # start button Handball
                              "$335515708423800", # start button Gardening
+                             "$284335424819300", # end item Handball
+                             "$335515641725400" # end item Gardening
                              ]
 
         votat_array = []
@@ -344,11 +346,11 @@ class XmlParser:
                                     if get_phase == "exploration":
                                         source = entry.attrib["sourceId"]
                                         destination = entry.attrib["destinationId"]
-                                        this_row["SpecificAction"] = source + "->" + destination
+                                        this_row["ChangeDependency"] = source + "->" + destination
 
                                 # Store actions
-                                this_row["TimeAfterOnset"] = time_delta
                                 this_row["SpecificAction"] = get_button
+                                this_row["TimeAfterOnset"] = time_delta
                                 this_row["Date"] = this_time
                                 this_row["Phase"] = get_phase
                                 this_row["Action"] = action
@@ -532,6 +534,5 @@ class XmlParser:
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
     XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
-
     print("# finished at", datetime.datetime.now().time())
 
