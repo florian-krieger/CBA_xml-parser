@@ -446,19 +446,11 @@ class XmlParser:
         # -------------------------------------------------------------------
 
         # time excl. instruction
-        time_data = tree.xpath("microdynOverview/executedPhases")
-        exploration_time_no_instr = None
-        control_time_no_instr = None
+        end_data = tree.xpath("microdynOverview")[0]
+        exploration_time_no_instr = end_data.attrib["explorationTime"]
+        control_time_no_instr = end_data.attrib["controlTime"]
 
-        for td in time_data:
-            for entry in td.iter():
-                if "EXPLORATION" in entry.values():
-                    exploration_time_no_instr = entry.attrib["time"]
-
-                elif "CONTROL" in entry.values():
-                    control_time_no_instr = entry.attrib["time"]
-
-        times_noInstr = {"exploration": exploration_time_no_instr,
+        times_no_instr = {"exploration": exploration_time_no_instr,
                          "control": control_time_no_instr}
 
         # add end time to actions
@@ -513,7 +505,7 @@ class XmlParser:
 
             if not this_action_df.empty:
                 agg["Rounds"] = this_action_df["Round"].max()
-                agg["Time_NoInstr"] = times_noInstr[phase]
+                agg["Time_NoInstr"] = times_no_instr[phase]
                 agg["Correct"] = correct[phase]
                 agg["VOTATfreq"] = (this_action_df["strategy"] == "VOTAT").sum()
                 agg["HOTATfreq"] = (this_action_df["strategy"] == "HOTAT").sum()
@@ -533,6 +525,6 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
 
