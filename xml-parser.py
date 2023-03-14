@@ -445,6 +445,14 @@ class XmlParser:
         # get time on task
         # -------------------------------------------------------------------
 
+        """
+        End time is taken from microdyn overview. The Execution environment is caluclating the time on task
+        correctly (double-checked) but this is only indicated in the overview. I.e., there is not log-entry
+        when the "finish" button was pressed and the item was terminated. Hence, we use the entry from overview 
+        and we also calculate the specific time stamp by date(end) = start time + time on task. 
+        """
+
+
         # time excl. instruction
         end_data = tree.xpath("microdynOverview")[0]
         exploration_time_no_instr = end_data.attrib["explorationTime"]
@@ -460,7 +468,7 @@ class XmlParser:
         end_row["Test"] = test
         end_row["SpecificAction"] = "END"
         end_row["TimeAfterOnset"] = exploration_time_no_instr
-        end_row["Date"] = start_time
+        end_row["Date"] = start_time + datetime.timedelta(seconds = int(exploration_time_no_instr))
         end_row["Phase"] = "exploration"
         end_row["Action"] = "EndExploration"
         end_row["Round"] = np.NaN
@@ -525,6 +533,6 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
 
