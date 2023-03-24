@@ -53,7 +53,6 @@ class XmlParser:
         if self.subset_cases or self.subset_tasks:
             self.include_these_files()
 
-
         # STEP 2 -> parse all files
         self.parse_all_files()
 
@@ -81,7 +80,6 @@ class XmlParser:
         else:
             for self.thisFile in self.allFiles:
                 self.parse_this_file()
-
 
     # save data frame
     def save_data_frames(self):
@@ -136,7 +134,6 @@ class XmlParser:
         cases = [str(i) for i in cases]
         tasks = list(self.df_tasks["tasks"].values)
 
-
         # create list in which included files are stored
         use_these_files = []
 
@@ -151,7 +148,7 @@ class XmlParser:
 
             # select cases
             elif self.subset_cases and not self.subset_tasks:
-                for case in cases: #todo problem when codes are similar!
+                for case in cases:  # todo problem when codes are similar!
                     if case in thisFile:
                         use_these_files.append(thisFile)
 
@@ -164,8 +161,6 @@ class XmlParser:
 
             # over-write "allFiles" with subset of selected files (i.e., "use_these_files")
             self.allFiles = use_these_files
-
-
 
     # -- MAIN FUNCTION -- #
 
@@ -253,10 +248,10 @@ class XmlParser:
         buttons_to_ignore = ["Start",
                              "End",
                              "Reset",
-                             "$284335466347500", # start button Handball
-                             "$335515708423800", # start button Gardening
-                             "$284335424819300", # end item Handball
-                             "$335515641725400" # end item Gardening
+                             "$284335466347500",  # start button Handball
+                             "$335515708423800",  # start button Gardening
+                             "$284335424819300",  # end item Handball
+                             "$335515641725400"  # end item Gardening
                              ]
 
         votat_array = []
@@ -328,7 +323,7 @@ class XmlParser:
                                                 this_strategy = "NOTAT"
                                             elif num_zeros == max_len - 1:
                                                 this_strategy = "VOTAT"
-                                                if thisPhase == "exploration": # fullVOTAT is relevant for exploration
+                                                if thisPhase == "exploration":  # fullVOTAT is relevant for exploration
                                                     votat_array.append(this_exo_values)
                                             elif num_zeros == 0:
                                                 this_strategy = "CA"
@@ -372,7 +367,7 @@ class XmlParser:
         else:
             full_votat = False
 
-        #print(votat_array, votat_by_vars, full_votat)
+        # print(votat_array, votat_by_vars, full_votat)
         # -------------------------------------------------------------------
         # check if response was correct in EXPLORATION phase + ED + num relations
         # -------------------------------------------------------------------
@@ -405,6 +400,8 @@ class XmlParser:
         else:
             correct_exploration = 0
 
+        
+
         # -------------------------------------------------------------------
         # check if response was correct in CONTROL phase
         # -------------------------------------------------------------------
@@ -423,31 +420,56 @@ class XmlParser:
         given_control_response = dict()
         for variable in endo_variables:
             this_var = self.df_actions.get(variable)
-            print(this_var)
-            if this_var is not None:
-                given_control_response[variable] = this_var.iloc[-1]
-            else:
-                given_control_response[variable] = np.NaN
+            # print(this_var)
+
+            # get last valid value (last valid log for each ENDO value)
+            last_valid_index = this_var.last_valid_index()
+            given_control_response[variable] = this_var.loc[last_valid_index]
+
+        correct_control_partial_list = []
+        correct_control_partial = np.NaN
 
         # compare given answer with pre-defined thresholds
         for given, thres1, thres2 in zip(given_control_response, threshold1, threshold2):
 
-            if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2] \
-                    or threshold2[thres2] <= given_control_response[given] <= threshold2[thres1]:
-                correct_control = 1
+            if threshold1[thres1] < threshold2[thres2]:
+                if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2]:
+                    correct_control_partial = 1
+            elif threshold2[thres2] < threshold1[thres1]:
+                if threshold2[thres2] <= given_control_response[given] <= threshold1[thres1]:
+                    correct_control_partial = 1
             else:
-                correct_control = 0
+                correct_control_partial = 0
+
+            # store this partial solution of control phase for scoring in the next step
+            correct_control_partial_list.append(correct_control_partial)
+
+        # calculate full scoring
+        if all(elem == 1 for elem in correct_control_partial_list):
+            correct_control = 1
+        else:
+            correct_control = 0
 
         correct = {"exploration": correct_exploration,
                    "control": correct_control}
 
-        print("--- CONTROL PHASE ---",
-              f"Given: {given_control_response}",
-              f"Threshold Target: {threshold1}",
-              f"Threshold Limit: {threshold2}",
-              f"Correct: {correct_control}",
-              "--- ---",
-              sep="\n")
+
+        # --- print output for control  ----------------------------------
+        all_keys = list(set(given_control_response.keys()) | set(threshold1.keys()) | set(threshold2.keys()))
+
+        given_list = [given_control_response.get(key, None) for key in all_keys]
+        threshold_target_list = [threshold1.get(key, None) for key in all_keys]
+        threshold_limit_list = [threshold2.get(key, None) for key in all_keys]
+
+        print_out_control = pd.DataFrame({
+            'given_respsonse': given_list,
+            'threshold_target': threshold_target_list,
+            'threshold_limit': threshold_limit_list
+        }, index=all_keys).reindex(['EndoA', 'EndoB', 'EndoC'])
+
+        print(print_out_control)
+        print(f"Correct: {correct_control}")
+        # ------------------------------------------------------------------
 
         # -------------------------------------------------------------------
         # get time on task
@@ -460,14 +482,13 @@ class XmlParser:
         and we also calculate the specific time stamp by date(end) = start time + time on task. 
         """
 
-
         # time excl. instruction
         end_data = tree.xpath("microdynOverview")[0]
         exploration_time_no_instr = end_data.attrib["explorationTime"]
         control_time_no_instr = end_data.attrib["controlTime"]
 
         times_no_instr = {"exploration": exploration_time_no_instr,
-                         "control": control_time_no_instr}
+                          "control": control_time_no_instr}
 
         # add end time to actions
         end_row = dict()
@@ -476,7 +497,7 @@ class XmlParser:
         end_row["Test"] = test
         end_row["SpecificAction"] = "END"
         end_row["TimeAfterOnset"] = exploration_time_no_instr
-        end_row["Date"] = start_time + datetime.timedelta(seconds = int(exploration_time_no_instr))
+        end_row["Date"] = start_time + datetime.timedelta(seconds=int(exploration_time_no_instr))
         end_row["Phase"] = "exploration"
         end_row["Action"] = "EndExploration"
         end_row["Round"] = np.NaN
@@ -541,6 +562,5 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="Timing", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="AlexGT/data", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
-
