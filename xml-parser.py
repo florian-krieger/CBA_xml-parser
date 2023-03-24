@@ -29,7 +29,7 @@ class XmlParser:
         # STEP 0a -> df for action stream
         self.actionDfColumns = ["ID", "Item", "Date", "Test",
                                 "TimeAfterOnset", "Phase", "Round",
-                                "Action", "DeltaDependency"]
+                                "Action", "SpecificAction"]
 
         self.df_actions = pd.DataFrame(columns=self.actionDfColumns)
 
@@ -52,7 +52,6 @@ class XmlParser:
         # STEP 1b -> if subset of cases/tasks for analyses is desired, only include them
         if self.subset_cases or self.subset_tasks:
             self.include_these_files()
-
 
         # STEP 2 -> parse all files
         self.parse_all_files()
@@ -82,7 +81,6 @@ class XmlParser:
             for self.thisFile in self.allFiles:
                 self.parse_this_file()
 
-
     # save data frame
     def save_data_frames(self):
         """
@@ -100,6 +98,8 @@ class XmlParser:
             self.df_wide.to_csv(self.out + os.sep + self.test_description + "_aggregated_wide.csv", index=False)
 
         if self.verbose:
+            self.df_actions["TimeAfterOnset"] = pd.to_numeric(self.df_actions["TimeAfterOnset"])
+            self.df_actions.sort_values(by=["ID", "Item", "TimeAfterOnset"], inplace=True)
             self.df_actions.to_csv(self.out + os.sep + self.test_description + "_actions.csv", index=False)
 
     # convert dfLong to dfWide
@@ -134,7 +134,6 @@ class XmlParser:
         cases = [str(i) for i in cases]
         tasks = list(self.df_tasks["tasks"].values)
 
-
         # create list in which included files are stored
         use_these_files = []
 
@@ -149,7 +148,7 @@ class XmlParser:
 
             # select cases
             elif self.subset_cases and not self.subset_tasks:
-                for case in cases: #todo problem when codes are similar!
+                for case in cases:  # todo problem when codes are similar!
                     if case in thisFile:
                         use_these_files.append(thisFile)
 
@@ -162,8 +161,6 @@ class XmlParser:
 
             # over-write "allFiles" with subset of selected files (i.e., "use_these_files")
             self.allFiles = use_these_files
-
-
 
     # -- MAIN FUNCTION -- #
 
@@ -197,16 +194,19 @@ class XmlParser:
         user = properties_path.attrib['user']
         test = properties_path.attrib['test']
 
+        print(f"###### STARTED: {user}, with, {task} #######")
+        print("\n")
+
         self.test_description = test
 
-        start_time_path = tree.xpath("tracesOverview/logEntry")[0]
-        start_time = convert_time(start_time_path.attrib['timeStamp']) # todo <logEntry xsi:type="cbaloggingmodel:ButtonLogEntry" id="$20105534900500"/> start time
-
+        start_time_path = tree.xpath("tracesOverview/logEntry")[2]
+        start_time = convert_time(start_time_path.attrib['timeStamp'])
 
         # add start time to actions
         start_row = dict()
         start_row["ID"] = user
         start_row["Item"] = task
+        start_row["SpecificAction"] = "START"
         start_row["Test"] = test
         start_row["TimeAfterOnset"] = 0
         start_row["Date"] = start_time
@@ -244,10 +244,18 @@ class XmlParser:
         actions = {
             "PressApply": "cbaloggingmodel:MicroDynButtonPressLogEntry",
             "AddDependency": "cbaloggingmodel:MicroDynAddDependencyLogEntry",
-            "RemoveDependency": "cbaloggingmodel:MicroDynRemoveDependencyLogEntry"
+            "RemoveDependency": "cbaloggingmodel:MicroDynRemoveDependencyLogEntry",
+            "PressButton": "cbaloggingmodel:ButtonLogEntry"
         }
 
-        buttons_to_ignore = ["Start", "End", "Reset"]
+        buttons_to_ignore = ["Start",
+                             "End",
+                             "Reset",
+                             "$284335466347500",  # start button Handball
+                             "$335515708423800",  # start button Gardening
+                             "$284335424819300",  # end item Handball
+                             "$335515641725400"  # end item Gardening
+                             ]
 
         votat_array = []
         this_strategy = None
@@ -289,7 +297,10 @@ class XmlParser:
 
                             # try to get phase and buttons
                             get_phase = entry.attrib.get("phase")
-                            get_button = entry.attrib.get("button")
+
+                            get_button = entry.attrib.get("button") \
+                                if entry.attrib.get("button") is not None \
+                                else entry.attrib.get("id")
 
                             # avoid that 'start' and 'end' buttons are counted as actions
                             if get_button not in buttons_to_ignore:
@@ -315,7 +326,7 @@ class XmlParser:
                                                 this_strategy = "NOTAT"
                                             elif num_zeros == max_len - 1:
                                                 this_strategy = "VOTAT"
-                                                if thisPhase == "exploration": # fullVOTAT is relevant for exploration
+                                                if thisPhase == "exploration":  # fullVOTAT is relevant for exploration
                                                     votat_array.append(this_exo_values)
                                             elif num_zeros == 0:
                                                 this_strategy = "CA"
@@ -333,19 +344,19 @@ class XmlParser:
                                     if get_phase == "exploration":
                                         source = entry.attrib["sourceId"]
                                         destination = entry.attrib["destinationId"]
-                                        this_row["DeltaDependency"] = source + "->" + destination
+                                        this_row["ChangeDependency"] = source + "->" + destination
 
                                 # Store actions
+                                this_row["SpecificAction"] = get_button
                                 this_row["TimeAfterOnset"] = time_delta
                                 this_row["Date"] = this_time
                                 this_row["Phase"] = get_phase
                                 this_row["Action"] = action
-                                this_row["Round"] = rounds[get_phase]
+                                this_row["Round"] = rounds[get_phase] if get_phase is not None else np.NaN
                                 this_row["strategy"] = this_strategy
 
                                 this_row_df = pd.DataFrame.from_dict(this_row, orient="index").T
                                 self.df_actions = pd.concat([self.df_actions, this_row_df], ignore_index=True)
-                                a = self.df_actions
 
         # -------------------------------------------------------------------
         # check fullVOTAT
@@ -359,7 +370,7 @@ class XmlParser:
         else:
             full_votat = False
 
-        #print(votat_array, votat_by_vars, full_votat)
+        # print(votat_array, votat_by_vars, full_votat)
         # -------------------------------------------------------------------
         # check if response was correct in EXPLORATION phase + ED + num relations
         # -------------------------------------------------------------------
@@ -392,6 +403,14 @@ class XmlParser:
         else:
             correct_exploration = 0
 
+        print("--- EXPLORATION PHASE Scoring ---")
+        print (f"Correct Solution {set(given_model_results)}",
+               f"Response {set(end_model_response)}",
+               f"Correct: {correct_exploration}",
+               sep="\n"
+               )
+        print("\n")
+
         # -------------------------------------------------------------------
         # check if response was correct in CONTROL phase
         # -------------------------------------------------------------------
@@ -410,43 +429,94 @@ class XmlParser:
         given_control_response = dict()
         for variable in endo_variables:
             this_var = self.df_actions.get(variable)
-            #print(this_var)
-            if this_var is not None:
-                given_control_response[variable] = this_var.iloc[-1]
-            else:
-                given_control_response[variable] = np.NaN
+            # print(this_var)
+
+            # get last valid value (last valid log for each ENDO value)
+            last_valid_index = this_var.last_valid_index()
+            given_control_response[variable] = this_var.loc[last_valid_index]
+
+        correct_control_partial_list = []
+        correct_control_partial = np.NaN
 
         # compare given answer with pre-defined thresholds
         for given, thres1, thres2 in zip(given_control_response, threshold1, threshold2):
 
-            if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2] \
-                    or threshold2[thres2] <= given_control_response[given] <= threshold2[thres2]:
-                correct_control = 1
+            if threshold1[thres1] < threshold2[thres2]:
+                if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2]:
+                    correct_control_partial = 1
+            elif threshold2[thres2] < threshold1[thres1]:
+                if threshold2[thres2] <= given_control_response[given] <= threshold1[thres1]:
+                    correct_control_partial = 1
             else:
-                correct_control = 0
+                correct_control_partial = 0
+
+            # store this partial solution of control phase for scoring in the next step
+            correct_control_partial_list.append(correct_control_partial)
+
+        # calculate full scoring
+        if all(elem == 1 for elem in correct_control_partial_list):
+            correct_control = 1
+        else:
+            correct_control = 0
 
         correct = {"exploration": correct_exploration,
                    "control": correct_control}
+
+
+        # --- print output for control  ----------------------------------
+        all_keys = list(set(given_control_response.keys()) | set(threshold1.keys()) | set(threshold2.keys()))
+
+        given_list = [given_control_response.get(key, None) for key in all_keys]
+        threshold_target_list = [threshold1.get(key, None) for key in all_keys]
+        threshold_limit_list = [threshold2.get(key, None) for key in all_keys]
+
+        print_out_control = pd.DataFrame({
+            'Response': given_list,
+            'threshold_target': threshold_target_list,
+            'threshold_limit': threshold_limit_list
+        }, index=all_keys).reindex(['EndoA', 'EndoB', 'EndoC'])
+
+        print("--- CONTROL PHASE Scoring ---")
+        print(print_out_control)
+        print(f"Correct: {correct_control}")
+        print("\n")
+
+        # ------------------------------------------------------------------
 
         # -------------------------------------------------------------------
         # get time on task
         # -------------------------------------------------------------------
 
+        """
+        End time is taken from microdyn overview. The Execution environment is caluclating the time on task
+        correctly (double-checked) but this is only indicated in the overview. I.e., there is not log-entry
+        when the "finish" button was pressed and the item was terminated. Hence, we use the entry from overview 
+        and we also calculate the specific time stamp by date(end) = start time + time on task. 
+        """
+
         # time excl. instruction
-        time_data = tree.xpath("microdynOverview/executedPhases")
-        exploration_time_no_instr = None
-        control_time_no_instr = None
+        end_data = tree.xpath("microdynOverview")[0]
+        exploration_time_no_instr = end_data.attrib["explorationTime"]
+        control_time_no_instr = end_data.attrib["controlTime"]
 
-        for td in time_data:
-            for entry in td.iter():
-                if "EXPLORATION" in entry.values():
-                    exploration_time_no_instr = entry.attrib["time"]
+        times_no_instr = {"exploration": exploration_time_no_instr,
+                          "control": control_time_no_instr}
 
-                elif "CONTROL" in entry.values():
-                    control_time_no_instr = entry.attrib["time"]
+        # add end time to actions
+        end_row = dict()
+        end_row["ID"] = user
+        end_row["Item"] = task
+        end_row["Test"] = test
+        end_row["SpecificAction"] = "END"
+        end_row["TimeAfterOnset"] = exploration_time_no_instr
+        end_row["Date"] = start_time + datetime.timedelta(seconds=int(exploration_time_no_instr))
+        end_row["Phase"] = "exploration"
+        end_row["Action"] = "EndExploration"
+        end_row["Round"] = np.NaN
+        end_row["strategy"] = np.NaN
 
-        times_noInstr = {"exploration": exploration_time_no_instr,
-                         "control": control_time_no_instr}
+        end_row_df = pd.DataFrame.from_dict(end_row, orient="index").T
+        self.df_actions = pd.concat([self.df_actions, end_row_df], ignore_index=True)
 
         # -------------------------------------------------------------------
         # task characteristics (relations, ED)
@@ -484,7 +554,7 @@ class XmlParser:
 
             if not this_action_df.empty:
                 agg["Rounds"] = this_action_df["Round"].max()
-                agg["Time_NoInstr"] = times_noInstr[phase]
+                agg["Time_NoInstr"] = times_no_instr[phase]
                 agg["Correct"] = correct[phase]
                 agg["VOTATfreq"] = (this_action_df["strategy"] == "VOTAT").sum()
                 agg["HOTATfreq"] = (this_action_df["strategy"] == "HOTAT").sum()
@@ -499,12 +569,11 @@ class XmlParser:
             self.df_long = pd.concat([self.df_long, agg_df], ignore_index=True)
 
         # print task, user
-        print("    -> finished -", user, "with", task)
+        print(f"###### FINISHED: {user} with {task} #######")
+        print("\n")
 
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="selection", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
-
+    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
-
