@@ -194,6 +194,9 @@ class XmlParser:
         user = properties_path.attrib['user']
         test = properties_path.attrib['test']
 
+        print(f"###### STARTED: {user}, with, {task} #######")
+        print("\n")
+
         self.test_description = test
 
         start_time_path = tree.xpath("tracesOverview/logEntry")[2]
@@ -400,7 +403,13 @@ class XmlParser:
         else:
             correct_exploration = 0
 
-        
+        print("--- EXPLORATION PHASE Scoring ---")
+        print (f"Correct Solution {set(given_model_results)}",
+               f"Response {set(end_model_response)}",
+               f"Correct: {correct_exploration}",
+               sep="\n"
+               )
+        print("\n")
 
         # -------------------------------------------------------------------
         # check if response was correct in CONTROL phase
@@ -462,13 +471,16 @@ class XmlParser:
         threshold_limit_list = [threshold2.get(key, None) for key in all_keys]
 
         print_out_control = pd.DataFrame({
-            'given_respsonse': given_list,
+            'Response': given_list,
             'threshold_target': threshold_target_list,
             'threshold_limit': threshold_limit_list
         }, index=all_keys).reindex(['EndoA', 'EndoB', 'EndoC'])
 
+        print("--- CONTROL PHASE Scoring ---")
         print(print_out_control)
         print(f"Correct: {correct_control}")
+        print("\n")
+
         # ------------------------------------------------------------------
 
         # -------------------------------------------------------------------
@@ -557,10 +569,11 @@ class XmlParser:
             self.df_long = pd.concat([self.df_long, agg_df], ignore_index=True)
 
         # print task, user
-        print("    -> finished -", user, "with", task)
+        print(f"###### FINISHED: {user} with {task} #######")
+        print("\n")
 
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="AlexGT/data", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
