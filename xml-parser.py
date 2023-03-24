@@ -423,7 +423,7 @@ class XmlParser:
         given_control_response = dict()
         for variable in endo_variables:
             this_var = self.df_actions.get(variable)
-            #print(this_var)
+            print(this_var)
             if this_var is not None:
                 given_control_response[variable] = this_var.iloc[-1]
             else:
@@ -433,13 +433,21 @@ class XmlParser:
         for given, thres1, thres2 in zip(given_control_response, threshold1, threshold2):
 
             if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2] \
-                    or threshold2[thres2] <= given_control_response[given] <= threshold2[thres2]:
+                    or threshold2[thres2] <= given_control_response[given] <= threshold2[thres1]:
                 correct_control = 1
             else:
                 correct_control = 0
 
         correct = {"exploration": correct_exploration,
                    "control": correct_control}
+
+        print("--- CONTROL PHASE ---",
+              f"Given: {given_control_response}",
+              f"Threshold Target: {threshold1}",
+              f"Threshold Limit: {threshold2}",
+              f"Correct: {correct_control}",
+              "--- ---",
+              sep="\n")
 
         # -------------------------------------------------------------------
         # get time on task
@@ -533,6 +541,6 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="Timing", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
 
