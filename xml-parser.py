@@ -335,6 +335,9 @@ class XmlParser:
                                             else:
                                                 this_strategy = np.NaN
 
+
+                                            print(this_exo_values, this_strategy, sep=" -> ")
+
                                 # IF add or remove dependency
                                 if actions[action] == actions["AddDependency"] or actions[action] == actions[
                                     "RemoveDependency"]:
@@ -370,7 +373,14 @@ class XmlParser:
         else:
             full_votat = False
 
-        # print(votat_array, votat_by_vars, full_votat)
+        #print(votat_array, votat_by_vars, full_votat)
+
+        print(f"Number of Variables: {max_len}",
+              f"Number of Variable with VOTAT: {votat_by_vars}",
+              f"Full VOTAT application: {full_votat}",
+              "\n",
+              sep="\n")
+
         # -------------------------------------------------------------------
         # check if response was correct in EXPLORATION phase + ED + num relations
         # -------------------------------------------------------------------
@@ -429,26 +439,30 @@ class XmlParser:
         given_control_response = dict()
         for variable in endo_variables:
             this_var = self.df_actions.get(variable)
-            # print(this_var)
+            #print(this_var)
 
             # get last valid value (last valid log for each ENDO value)
-            last_valid_index = this_var.last_valid_index()
-            given_control_response[variable] = this_var.loc[last_valid_index]
+            try:
+                last_valid_index = this_var.last_valid_index()
+                given_control_response[variable] = this_var.loc[last_valid_index]
+            # we need this here because if there was a bug in displaying phases and no logs were recorded
+            except AttributeError:
+                given_control_response[variable] = np.NaN
 
         correct_control_partial_list = []
-        correct_control_partial = np.NaN
 
         # compare given answer with pre-defined thresholds
-        for given, thres1, thres2 in zip(given_control_response, threshold1, threshold2):
-
-            if threshold1[thres1] < threshold2[thres2]:
-                if threshold1[thres1] <= given_control_response[given] <= threshold2[thres2]:
+        for key, value in given_control_response.items():
+            if threshold1[key] < threshold2[key]:
+                if threshold1[key] <= value <= threshold2[key]:
                     correct_control_partial = 1
-            elif threshold2[thres2] < threshold1[thres1]:
-                if threshold2[thres2] <= given_control_response[given] <= threshold1[thres1]:
-                    correct_control_partial = 1
+                else:
+                    correct_control_partial = 0
             else:
-                correct_control_partial = 0
+                if threshold2[key] <= value <= threshold1[key]:
+                    correct_control_partial = 1
+                else:
+                    correct_control_partial = 0
 
             # store this partial solution of control phase for scoring in the next step
             correct_control_partial_list.append(correct_control_partial)
@@ -575,5 +589,5 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="AlexGT/data", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
