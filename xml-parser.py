@@ -268,6 +268,8 @@ class XmlParser:
 
         logEntries = tree.xpath("tracesOverview/logEntry")
 
+        print("--- STRATEGY Scoring ---")
+
         # loop through each log entry in tree
         for logEntry in logEntries:
 
@@ -589,5 +591,5 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="AlexGT/data", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
