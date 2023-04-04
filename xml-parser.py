@@ -518,6 +518,7 @@ class XmlParser:
         times_no_instr = {"exploration": exploration_time_no_instr,
                           "control": control_time_no_instr}
 
+
         # add end time to actions
         end_row = dict()
         end_row["ID"] = user
@@ -533,6 +534,13 @@ class XmlParser:
 
         end_row_df = pd.DataFrame.from_dict(end_row, orient="index").T
         self.df_actions = pd.concat([self.df_actions, end_row_df], ignore_index=True)
+
+        # -------------------------------------------------------------------
+        # get number of resets in exploration phase
+        # -------------------------------------------------------------------
+        exploration_resets = end_data.attrib["explorationNbReset"]
+        resets = {"exploration": exploration_resets,
+                  "control": np.NaN}
 
         # -------------------------------------------------------------------
         # task characteristics (relations, ED)
@@ -567,6 +575,7 @@ class XmlParser:
             agg["NumDependencies"] = num_dependencies
             agg["NumInput"] = len(exo_variables)
             agg["NumOutput"] = len(endo_variables)
+            agg["Resets"] = resets[phase]
 
             if not this_action_df.empty:
                 agg["Rounds"] = this_action_df["Round"].max()
@@ -591,5 +600,5 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="Vantaa2016/sample", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
     print("# finished at", datetime.datetime.now().time())
