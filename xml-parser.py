@@ -9,7 +9,7 @@ import sys
 
 class XmlParser:
 
-    def __init__(self, inp="", out="out", verbose=True, subset_cases=False, subset_tasks=True, wide=False):
+    def __init__(self, inp="", out="out", task_file="tasks", verbose=True, subset_cases=False, subset_tasks=True, wide=False):
         """
         @:param inp: specified input path of xml-files
         @:param out: specified out path of data frames
@@ -19,6 +19,7 @@ class XmlParser:
 
         self.relevant_data_points = []
         self.subset_tasks = subset_tasks
+        self.task_file = task_file
         self.wide = wide
         self.subset_cases = subset_cases
         self.verbose = verbose
@@ -129,7 +130,7 @@ class XmlParser:
 
         # get infos
         self.df_cases = pd.read_csv("info/IDs.csv")
-        self.df_tasks = pd.read_csv("info/tasks.csv")
+        self.df_tasks = pd.read_csv("info/" + self.task_file + ".csv")
         cases = list(self.df_cases["ID"].values)
         cases = [str(i) for i in cases]
         tasks = list(self.df_tasks["tasks"].values)
@@ -600,5 +601,10 @@ class XmlParser:
 
 if __name__ == '__main__':
     print("# start at", datetime.datetime.now().time())
-    XmlParser(inp="Vantaa2016/sample", subset_cases=False, subset_tasks=True, verbose=True, wide=False)
+    XmlParser(inp="Vantaa2016/sample",
+              task_file="tasks_van",
+              subset_cases=False,
+              subset_tasks=True,
+              verbose=True,
+              wide=False)
     print("# finished at", datetime.datetime.now().time())
